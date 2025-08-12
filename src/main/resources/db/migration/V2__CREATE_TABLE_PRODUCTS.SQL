@@ -1,0 +1,6 @@
+CREATE TABLE products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    ref VARCHAR(255) NOT NULL,
+    preco DECIMAL(15, 2) NOT NULL
+);
