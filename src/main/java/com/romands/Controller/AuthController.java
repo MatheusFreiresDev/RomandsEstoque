@@ -11,6 +11,9 @@ import com.romands.Execeptions.EmailRegisteredException;
 import com.romands.Execeptions.UsernameNotFoundException;
 import com.romands.Repository.UserRepository;
 import com.romands.Service.TokenService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -38,6 +41,12 @@ public class AuthController {
     @Autowired
     TokenService tokenService;
 
+    @Operation(summary = "Registra um novo usuário")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso"),
+            @ApiResponse(responseCode = "409", description = "Email já registrado"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos no cadastro")
+    })
     @PostMapping("/register")
     public ResponseEntity<?> create(@Valid @RequestBody RegisterDTO registerDTO) {
         String password = new BCryptPasswordEncoder().encode(registerDTO.password());
@@ -47,10 +56,19 @@ public class AuthController {
             throw new EmailRegisteredException();
         }
         userRepository.save(user);
-        RegisterResponse response = new RegisterResponse(user.getUsername() + " foi registrado!",LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+        RegisterResponse response = new RegisterResponse(
+                user.getUsername() + " foi registrado!",
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Faz login com email e senha")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login realizado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos no login")
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginDTO loginDTO) {
         if(userRepository.findByEmail(loginDTO.email()) == null ){
@@ -59,7 +77,11 @@ public class AuthController {
         var user = new UsernamePasswordAuthenticationToken(loginDTO.email(), loginDTO.password());
         var auth = this.authenticationManager.authenticate(user);
         String token = tokenService.GenerateToken((User) userRepository.findByEmail(loginDTO.email()));
-        LoginResponse response = new LoginResponse("Logado com sucesso.",token,LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+        LoginResponse response = new LoginResponse(
+                "Logado com sucesso.",
+                token,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))
+        );
         return ResponseEntity.ok(response);
     }
 }

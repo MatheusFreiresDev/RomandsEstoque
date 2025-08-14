@@ -1,42 +1,56 @@
 package com.romands.ConfigSecurity;
 
 import com.romands.Execeptions.EmailRegisteredException;
-import com.romands.Execeptions.UsernameNotFoundException;
 import com.romands.Execeptions.InvalidQuantityException;
 import com.romands.Execeptions.ProductNotFounded;
+import com.romands.Execeptions.UsernameNotFoundException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.time.Instant;
 import java.util.List;
 
 @org.springframework.web.bind.annotation.ControllerAdvice
 public class ControllerAdvice extends ResponseEntityExceptionHandler {
+
+    record ErrorResponse(String message, int status, Instant timestamp) {}
+
     @ExceptionHandler(EmailRegisteredException.class)
-    private ResponseEntity<?> EmailRegisteredException(EmailRegisteredException exception){
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
+    public ResponseEntity<ErrorResponse> handleEmailRegisteredException(EmailRegisteredException e) {
+        var error = new ErrorResponse(e.getMessage(), HttpStatus.CONFLICT.value(), Instant.now());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
+
     @ExceptionHandler(UsernameNotFoundException.class)
-    private ResponseEntity<?> UsernameNotFoundException(UsernameNotFoundException exception){
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException e) {
+        var error = new ErrorResponse(e.getMessage(), HttpStatus.NOT_FOUND.value(), Instant.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(InvalidQuantityException.class)
-    private ResponseEntity<?> invalidQuantity(InvalidQuantityException exception){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+    public ResponseEntity<ErrorResponse> handleInvalidQuantityException(InvalidQuantityException e) {
+        var error = new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
+
     @ExceptionHandler(ProductNotFounded.class)
-    private ResponseEntity<?> ProductNotFounded(ProductNotFounded exception){
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+    public ResponseEntity<ErrorResponse> handleProductNotFoundedException(ProductNotFounded e) {
+        var error = new ErrorResponse(e.getMessage(), HttpStatus.NOT_FOUND.value(), Instant.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
-            org.springframework.http.HttpHeaders headers,
+            HttpHeaders headers,
             org.springframework.http.HttpStatusCode status,
-            org.springframework.web.context.request.WebRequest request) {
+            WebRequest request)
+    {
 
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
@@ -44,8 +58,7 @@ public class ControllerAdvice extends ResponseEntityExceptionHandler {
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .toList();
 
-        return ResponseEntity.badRequest().body(errors);
+        var error = new ErrorResponse(errors.toString(), HttpStatus.BAD_REQUEST.value(), Instant.now());
+        return ResponseEntity.badRequest().body(error);
     }
-
 }
-
